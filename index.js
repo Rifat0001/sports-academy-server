@@ -37,13 +37,27 @@ async function run() {
         })
 
 
-        // for users data --------------------------------------------------------------------
+
+        // for carts data after clicking enroll it post item to data base--------------------------------------------------------------------
         app.post('/carts', async (req, res) => {
             const item = req.body;
             console.log(item)
             const result = await cartCollection.insertOne(item);
             res.send(result)
         })
+
+        // for check add to cart data from cart  api + it will show the number of product added-------------
+        app.get('/carts', async (req, res) => {
+            const email = req.query.email;
+            console.log(email);
+            if (!email) {
+                res.send([]);
+            }
+            const query = { email: email };
+            const result = await cartCollection.find(query).toArray();
+            res.send(result)
+        })
+
 
 
         // for users data --------------------------------------------------------------------
