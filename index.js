@@ -24,6 +24,53 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
+        const classCollection = client.db("sports").collection("class");
+        const cartCollection = client.db("sports").collection("carts");
+        const userCollection = client.db("sports").collection("users");
+        const paymentCollection = client.db("sports").collection("payments");
+
+        // for class data --------------------------------------------------------------------
+
+        app.get('/class', async (req, res) => {
+            const result = await classCollection.find().toArray();
+            res.send(result);
+        })
+
+
+        // for users data --------------------------------------------------------------------
+        app.post('/carts', async (req, res) => {
+            const item = req.body;
+            console.log(item)
+            const result = await cartCollection.insertOne(item);
+            res.send(result)
+        })
+
+
+        // for users data --------------------------------------------------------------------
+
+        app.get("/users", async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        });
+
+        app.post("/users", async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email };
+            const oldUser = await userCollection.findOne(query);
+            if (oldUser) {
+                return res.send({ message: "user already exist" });
+            }
+            const result = await userCollection.insertOne(user);
+            res.send(result);
+        });
+
+
+
+        // Send a ping to confirm a successful connection
+        // await client.db("admin").command({ ping: 1 });
+        // console.log(
+        //   "Pinged your deployment. You successfully connected to MongoDB!"
+        // );
         await client.connect();
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
