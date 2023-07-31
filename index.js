@@ -76,6 +76,7 @@ async function run() {
             res.send(result);
         });
 
+        // where when new user is registered then it is post to data base ---------------------
         app.post("/users", async (req, res) => {
             const user = req.body;
             const query = { email: user.email };
