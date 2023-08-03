@@ -60,7 +60,18 @@ async function run() {
             res.json({ token });
         });
 
-
+        // secure all user
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user?.role !== "admin") {
+                return res
+                    .status(403)
+                    .send({ error: true, message: "forbidden access" });
+            }
+            next();
+        };
 
         // for class data --------------------------------------------------------------------
 
@@ -126,18 +137,7 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         });
-        // secure all user
-        const verifyAdmin = async (req, res, next) => {
-            const email = req.decoded.email;
-            const query = { email: email };
-            const user = await userCollection.findOne(query);
-            if (user?.role !== "admin") {
-                return res
-                    .status(403)
-                    .send({ error: true, message: "forbidden access" });
-            }
-            next();
-        };
+
 
         // for make a user admin -------------------------------
         app.patch("/users/admin/:id", async (req, res) => {
@@ -162,6 +162,18 @@ async function run() {
             const query = { email: email };
             const user = await userCollection.findOne(query);
             const result = { admin: user?.role === "admin" };
+            res.send(result);
+        });
+
+        // instructor verify
+        app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (req.decoded.email !== email) {
+                return res.send({ instructor: false });
+            }
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            const result = { instructor: user?.role === "instructor" };
             res.send(result);
         });
 
