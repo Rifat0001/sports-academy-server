@@ -80,6 +80,19 @@ async function run() {
             res.send(result);
         })
 
+        // add class
+        app.post("/class", verifyJWT, async (req, res) => {
+            const newCourse = req.body;
+            const result = await classCollection.insertOne(newCourse);
+            res.send(result);
+        });
+
+        // for get add classes ---------------------
+        app.post('/class', async (req, res) => {
+            const newItem = req.body;
+            const result = await classCollection.insertOne(newItem);
+            res.send(result);
+        })
 
 
         // for carts data after clicking enroll it post item to data base--------------------------------------------------------------------
