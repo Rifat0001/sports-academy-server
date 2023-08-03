@@ -110,7 +110,7 @@ async function run() {
 
         // for users data --------------------------------------------------------------------
 
-        app.get("/users", async (req, res) => {
+        app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
         });
@@ -126,6 +126,18 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         });
+        // secure all user
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user?.role !== "admin") {
+                return res
+                    .status(403)
+                    .send({ error: true, message: "forbidden access" });
+            }
+            next();
+        };
 
         // for make a user admin -------------------------------
         app.patch("/users/admin/:id", async (req, res) => {
