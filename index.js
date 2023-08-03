@@ -9,6 +9,28 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
+/// verification
+const verifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+    // console.log("Authorization = ", authorization);
+    if (!authorization) {
+        return res
+            .status(401)
+            .send({ error: true, message: "unauthorized access" });
+    }
+    const token = authorization.split(" ")[1];
+
+    jwt.verify(token, process.env.Access_Token_Secret, (err, decoded) => {
+        if (err) {
+            return res.status(403).send({ error: true, message: "forbidden access" });
+        }
+        req.decoded = decoded;
+        // console.log({ decoded });
+        next();
+    });
+
+    // });
+};
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rsztvpo.mongodb.net/?retryWrites=true&w=majority`;
@@ -58,11 +80,17 @@ async function run() {
         })
 
         // for check add to cart data from cart  api + it will show the number of product added-------------
-        app.get('/carts', async (req, res) => {
+        app.get('/carts', verifyJWT, async (req, res) => {
             const email = req.query.email;
             console.log(email);
             if (!email) {
                 res.send([]);
+            }
+            const decodedEmail = req.decoded.email;
+            if (decodedEmail !== email) {
+                return res
+                    .status(403)
+                    .send({ error: true, message: "forbidden access" });
             }
             const query = { email: email };
             const result = await cartCollection.find(query).toArray();
