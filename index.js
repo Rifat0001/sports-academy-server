@@ -75,10 +75,30 @@ async function run() {
 
         // for class data --------------------------------------------------------------------
 
-        app.get('/class', async (req, res) => {
-            const result = await classCollection.find().toArray();
-            res.send(result);
-        })
+
+        app.get("/class", async (req, res) => {
+            const { email } = req.query;
+
+            if (email) {
+                // getting instructor's classes
+                try {
+                    const classes = await classCollection.find({ email }).toArray();
+                    res.json(classes);
+                } catch (error) {
+                    console.error("Failed to fetch instructor's classes:", error);
+                    res.status(500).send("Failed to fetch instructor's classes");
+                }
+            } else {
+                // getting all classes
+                try {
+                    const classes = await classCollection.find().toArray();
+                    res.json(classes);
+                } catch (error) {
+                    console.error("Failed to fetch classes:", error);
+                    res.status(500).send("Failed to fetch classes");
+                }
+            }
+        });
 
         // add class
         app.post("/class", verifyJWT, async (req, res) => {
@@ -87,12 +107,46 @@ async function run() {
             res.send(result);
         });
 
-        // for get add classes ---------------------
-        app.post('/class', async (req, res) => {
-            const newItem = req.body;
-            const result = await classCollection.insertOne(newItem);
+        // Update class
+        app.patch("/class/approve/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: "approved",
+                },
+            };
+            const result = await classCollection.updateOne(filter, updateDoc);
             res.send(result);
-        })
+        });
+
+        // denied class
+        app.patch("/class/denied/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: "denied",
+                },
+            };
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+        // feedback from admin
+        app.post("/class/feedback/:id", async (req, res) => {
+            const id = req.params.id;
+            const { feedback } = req.body;
+
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    feedback,
+                },
+            };
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
 
 
         // for carts data after clicking enroll it post item to data base--------------------------------------------------------------------
