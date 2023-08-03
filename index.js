@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
 
@@ -28,6 +29,16 @@ async function run() {
         const cartCollection = client.db("sports").collection("carts");
         const userCollection = client.db("sports").collection("users");
         const paymentCollection = client.db("sports").collection("payments");
+
+        // for jwt token -------------------------------------------
+        app.post("/jwt", (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.Access_Token_Secret);
+            // console.log(token);
+            res.json({ token });
+        });
+
+
 
         // for class data --------------------------------------------------------------------
 
@@ -89,7 +100,7 @@ async function run() {
         });
 
         // for make a user admin -------------------------------
-        app.patch('users/admin/:id', async (req, res) => {
+        app.patch("/users/admin/:id", async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
@@ -98,7 +109,22 @@ async function run() {
                 },
             };
             const result = await userCollection.updateOne(filter, updateDoc);
-            res.send(result);
+            console.log(result)
+            res.send(result)
+        })
+
+        // for make a user instructor -------------------------------
+        app.patch("/users/instructor/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'instructor'
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            console.log(result)
+            res.send(result)
         })
 
 
