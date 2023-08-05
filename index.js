@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const port = process.env.PORT || 5000;
 require("dotenv").config();
 
@@ -175,6 +176,18 @@ async function run() {
             res.send(result)
         })
 
+        app.get("/carts/:id", verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await cartCollection.findOne(query);
+            res.send(result);
+        });
+        app.delete("/carts/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await cartCollection.deleteOne(query);
+            res.send(result);
+        });
 
         // for delete any item from dashboard -------------
         app.delete('/carts/:id', async (req, res) => {
@@ -264,6 +277,52 @@ async function run() {
             res.send(instructors);
         });
 
+        // create payment intent
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            // console.log(price, amount);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ["card"],
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
+        app.post("/payments", verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+
+            const courseIds = payment.courseId;
+
+            // Update the enrolled classes and reduce available seats
+            const updateResult = await classCollection.updateMany(
+                // { _id: { $in: courseIds.map((id) => new ObjectId(id)) } },
+                { _id: new ObjectId(courseIds) },
+                { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
+            );
+            // Delete
+            const query = {
+                // _id: { $in: payment.cartItems.map((id) => new ObjectId(id)) },
+                _id: new ObjectId(payment.cartItems)
+
+            };
+            // console.log(payment.cartItemId);
+            const deleteResult = await cartCollection.deleteMany(query);
+
+            res.send({ insertResult, updateResult, deleteResult });
+        });
+
+
+
+        app.get("/payments", verifyJWT, async (req, res) => {
+            const payments = await paymentCollection.find().toArray();
+            res.send(payments);
+        });
 
 
         // Send a ping to confirm a successful connection
