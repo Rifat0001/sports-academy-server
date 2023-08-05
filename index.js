@@ -323,6 +323,26 @@ async function run() {
             const payments = await paymentCollection.find().toArray();
             res.send(payments);
         });
+        app.post("/class/enroll", verifyJWT, async (req, res) => {
+            const { courseId } = req.body;
+
+            // Update the enrolled classes
+            const updateResult = await classCollection.updateMany(
+                { _id: { $in: courseId.map((id) => new ObjectId(id)) } },
+                { $inc: { studentsEnrolled: 1, availableSeats: -1 } }
+            );
+
+            res.send({ updateResult });
+        });
+
+        app.get("/adminstats", async (req, res) => {
+            const users = await userCollection.estimatedDocumentCount();
+            const classData = await classCollection.estimatedDocumentCount();
+            const orders = await paymentCollection.estimatedDocumentCount();
+            const payments = await paymentCollection.find().toArray();
+            const revenue = payments.reduce((sum, payment) => sum + payment.price, 0);
+            res.send({ users, classData, orders, revenue });
+        });
 
 
         // Send a ping to confirm a successful connection
